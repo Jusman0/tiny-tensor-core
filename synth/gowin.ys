@@ -1,0 +1,4 @@
+# Synthesize tensor_core for gowin and report resources
+read_verilog rtl/mac_lane.v rtl/tensor_core.v
+synth_gowin -top tensor_core
+tee -o synth/gowin_stat.txt stat

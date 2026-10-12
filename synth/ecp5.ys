@@ -1,0 +1,4 @@
+# Synthesize tensor_core for ecp5 and report resources
+read_verilog rtl/mac_lane.v rtl/tensor_core.v
+synth_ecp5 -top tensor_core -json sim/tc_ecp5.json
+tee -o synth/ecp5_stat.txt stat

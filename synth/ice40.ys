@@ -1,0 +1,4 @@
+# Synthesize tensor_core for ice40 and report resources
+read_verilog rtl/mac_lane.v rtl/tensor_core.v
+synth_ice40 -top tensor_core
+tee -o synth/ice40_stat.txt stat

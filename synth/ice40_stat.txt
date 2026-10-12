@@ -1,0 +1,22 @@
+
+4. Printing statistics.
+
+=== tensor_core ===
+
+   Number of wires:               3667
+   Number of wire bits:          20008
+   Number of public wires:        3667
+   Number of public wire bits:   20008
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:              13862
+     SB_CARRY                     1507
+     SB_DFF                        251
+     SB_DFFE                      1304
+     SB_DFFESR                      12
+     SB_DFFSR                        2
+     SB_DFFSS                        3
+     SB_LUT4                     10766
+     SB_RAM40_4K                    17
+
