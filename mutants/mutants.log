@@ -1,0 +1,168 @@
+# Planted-bug tests behind the README's Verification table. Everything below the "command:" line
+# is that command's complete output (make's echo of the recipe, with the virtualenv path shortened
+# to <venv python>; the report; then the wall time from /usr/bin/time -p). These notes were
+# written after the run.
+#
+# How the table's figures come out of the rows below:
+# - Accuracy column: 11.33%, 81.00%, 98.33%, 98.33% (the README rounds to one decimal).
+# - 03_no_round: "hidden 0/300" means the hidden activations differ from the golden model on all
+#   300 images; "digit 299/300" means the predicted digit differs on 1 of the 300 (image 247).
+#   Its accuracy, 295/300 = 98.33%, is the same as the correct design's.
+# - 04_argmax_ge passes: the data facts below show no image with two equal top logits, in the
+#   first 300 or in all 10,000 (the closest gap is 1), so the mutated compare never decides.
+# - 02_acc16's "layer-2 0/300" is partly the testbench comparing a 10 x 16-bit accumulator bus
+#   with 10 x 24-bit expected values; its hidden and digit columns are the meaningful ones.
+#
+################################################################
+# command: make mutants PYTHON=<venv python>   (run from the repo root, Apple M2, macOS 15.1)
+PYTHON=<venv python> bash mutants/run_mutants.sh > sim/mutants.log; \
+	status=$?; cat sim/mutants.log; exit $status
+# Planted-bug tests: bash mutants/run_mutants.sh
+# 2026-10-12 21:38:59, Icarus Verilog version 13.0 (stable) (v13_0), N = 300 images
+# rtl/ and tb/ from commit 8ab78aa (0 uncommitted changes)
+
+The testbench says PASS only if all three bit-exact checks match the golden
+model on every image. Columns: images where the check matched, out of 300.
+
+mutant            | what it models                                                               | verdict | hidden  | layer-2  | digit   | accuracy
+00_original       | nothing planted: the RTL as committed                                        | PASS    | 300/300 | 300/300  | 300/300 | 98.33%
+01_unsigned_base  | accumulator base left unsigned, so negative products are zero-extended       | FAIL    | 0/300   | 0/300    | 34/300  | 11.33%
+02_acc16          | 16-bit accumulators instead of 24                                            | FAIL    | 96/300  | 0/300    | 248/300 | 81.00%
+03_no_round       | rounding term missing from requantization                                    | FAIL    | 0/300   | 0/300    | 299/300 | 98.33%
+04_argmax_ge      | argmax keeps the last maximum on ties (>= instead of >)                      | PASS    | 300/300 | 300/300  | 300/300 | 98.33%
+
+Data facts behind the results (python3 mutants/data_stats.py 300):
+  first 300 images: largest |acc1| = 131,388 (a signed 16-bit register holds up to 32,767); top-two logit ties: 0, smallest gap between the top two logits: 10
+  all 10000 images: largest |acc1| = 138,694 (a signed 16-bit register holds up to 32,767); top-two logit ties: 0, smallest gap between the top two logits: 1
+wall time: 53 s
+
+################################################################
+# Details: each mutant's change and the testbench output
+
+== 00_original: nothing planted: the RTL as committed
+-- testbench, first 300 images:
+image 0: label 7, predicted 7, 273 clocks
+image 1: label 2, predicted 2, 273 clocks
+image 2: label 1, predicted 1, 273 clocks
+image 3: label 0, predicted 0, 273 clocks
+image 4: label 4, predicted 4, 273 clocks
+images run            : 300
+hidden activations    : 300/300 images bit-exact
+layer-2 accumulators  : 300/300 images bit-exact
+predicted digit       : 300/300 match the golden model
+accuracy vs labels    : 295/300 = 98.33%
+clocks per image      : 273 (min) to 273 (max)
+PASS
+tb/tb_tensor_core.v:109: $finish called at 1413020000 (1ps)
+
+== 01_unsigned_base: accumulator base left unsigned, so negative products are zero-extended
+-- change (diff rtl/ mutated):
+26c26
+<     wire signed [ACC_W-1:0] base = first ? {ACC_W{1'b0}} : acc;
+---
+>     wire        [ACC_W-1:0] base = first ? {ACC_W{1'b0}} : acc;
+-- testbench, first 300 images:
+image 0: hidden activations differ
+image 0: layer-2 accumulators differ
+image 0: label 7, predicted 7, 273 clocks
+image 1: hidden activations differ
+image 1: layer-2 accumulators differ
+image 1: predicted 7, golden 2
+image 1: label 2, predicted 7, 273 clocks
+image 2: hidden activations differ
+image 2: layer-2 accumulators differ
+image 2: predicted 7, golden 1
+image 2: label 1, predicted 7, 273 clocks
+image 3: predicted 7, golden 0
+image 3: label 0, predicted 7, 273 clocks
+image 4: label 4, predicted 7, 273 clocks
+images run            : 300
+hidden activations    : 0/300 images bit-exact
+layer-2 accumulators  : 0/300 images bit-exact
+predicted digit       : 34/300 match the golden model
+accuracy vs labels    : 34/300 = 11.33%
+clocks per image      : 273 (min) to 273 (max)
+FAIL
+tb/tb_tensor_core.v:109: $finish called at 1413020000 (1ps)
+
+== 02_acc16: 16-bit accumulators instead of 24
+-- change (diff rtl/ mutated):
+21c21
+<     parameter ACC_W   = 24,           // worst case |acc1| = 196*127*128 < 2^23
+---
+>     parameter ACC_W   = 16,           // worst case |acc1| = 196*127*128 < 2^23
+-- testbench, first 300 images:
+image 0: hidden activations differ
+image 0: layer-2 accumulators differ
+image 0: label 7, predicted 7, 273 clocks
+image 1: hidden activations differ
+image 1: layer-2 accumulators differ
+image 1: label 2, predicted 2, 273 clocks
+image 2: layer-2 accumulators differ
+image 2: label 1, predicted 1, 273 clocks
+image 3: hidden activations differ
+image 3: predicted 6, golden 0
+image 3: label 0, predicted 6, 273 clocks
+image 4: label 4, predicted 4, 273 clocks
+image 9: predicted 0, golden 9
+image 20: predicted 8, golden 9
+images run            : 300
+hidden activations    : 96/300 images bit-exact
+layer-2 accumulators  : 0/300 images bit-exact
+predicted digit       : 248/300 match the golden model
+accuracy vs labels    : 243/300 = 81.00%
+clocks per image      : 273 (min) to 273 (max)
+FAIL
+tb/tb_tensor_core.v:109: $finish called at 1413020000 (1ps)
+
+== 03_no_round: rounding term missing from requantization
+-- change (diff rtl/ mutated):
+137c137
+<     localparam signed [41:0] ROUND = 42'sd1 <<< (SHIFT - 1);
+---
+>     localparam signed [41:0] ROUND = 42'sd0;
+-- testbench, first 300 images:
+image 0: hidden activations differ
+image 0: layer-2 accumulators differ
+image 0: label 7, predicted 7, 273 clocks
+image 1: hidden activations differ
+image 1: layer-2 accumulators differ
+image 1: label 2, predicted 2, 273 clocks
+image 2: hidden activations differ
+image 2: layer-2 accumulators differ
+image 2: label 1, predicted 1, 273 clocks
+image 3: label 0, predicted 0, 273 clocks
+image 4: label 4, predicted 4, 273 clocks
+image 247: predicted 6, golden 2
+images run            : 300
+hidden activations    : 0/300 images bit-exact
+layer-2 accumulators  : 0/300 images bit-exact
+predicted digit       : 299/300 match the golden model
+accuracy vs labels    : 295/300 = 98.33%
+clocks per image      : 273 (min) to 273 (max)
+FAIL
+tb/tb_tensor_core.v:109: $finish called at 1413020000 (1ps)
+
+== 04_argmax_ge: argmax keeps the last maximum on ties (>= instead of >)
+-- change (diff rtl/ mutated):
+200c200
+<                     if (idx == 0 || logit > best) begin
+---
+>                     if (idx == 0 || logit >= best) begin
+-- testbench, first 300 images:
+image 0: label 7, predicted 7, 273 clocks
+image 1: label 2, predicted 2, 273 clocks
+image 2: label 1, predicted 1, 273 clocks
+image 3: label 0, predicted 0, 273 clocks
+image 4: label 4, predicted 4, 273 clocks
+images run            : 300
+hidden activations    : 300/300 images bit-exact
+layer-2 accumulators  : 300/300 images bit-exact
+predicted digit       : 300/300 match the golden model
+accuracy vs labels    : 295/300 = 98.33%
+clocks per image      : 273 (min) to 273 (max)
+PASS
+tb/tb_tensor_core.v:109: $finish called at 1413020000 (1ps)
+real 53.51
+user 31.23
+sys 0.65

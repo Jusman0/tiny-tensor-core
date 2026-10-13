@@ -73,6 +73,8 @@ The first version simulated perfectly but was far too big for the FPGA I had in 
 
 For every image, the testbench checks three things against the golden model, bit for bit: all 32 hidden activations, all 10 layer-2 accumulators, and the predicted digit. It also tallies accuracy against the true labels.
 
+To check that the testbench can fail, `make mutants` plants one bug at a time in a copy of `rtl/` (a `sed` script each, in [`mutants/`](mutants/)) and runs the unchanged testbench on the first 300 images. The figures below are from [`mutants/mutants.log`](mutants/mutants.log):
+
 | Planted bug (first 300 images) | Accuracy | Caught? |
 |---|---|---|
 | Accumulator base left unsigned (negative products zero-extended) | 11.3% | yes |
@@ -80,7 +82,7 @@ For every image, the testbench checks three things against the golden model, bit
 | Rounding term missing from requantization | 98.3%, the same as the correct design | **yes**: internal values differ on 300 / 300 images, the predicted digit on only 1 / 300 |
 | Argmax keeps the last maximum on ties (`>=`) | 98.3% | no |
 
-The rounding bug is why the testbench compares internal values rather than just accuracy or the digit: the broken design scored exactly as well on these images, and its predicted digit differed from the golden model on only 1 of the 300. The tie-breaking bug isn't caught because no image in all 10,000 has two equal top scores (the closest gap is 1), so the data can't exercise it. A directed test with forced ties would.
+The rounding bug is why the testbench compares internal values rather than just accuracy or the digit: the broken design scored exactly as well on these images, and its predicted digit differed from the golden model on only 1 of the 300. The tie-breaking bug isn't caught because no image in all 10,000 has two equal top scores (the closest gap is 1, from `mutants/data_stats.py`, in the same log), so the data can't exercise it. A directed test with forced ties would.
 
 The data pipeline is checked too. [`model/prepare_mnist.py`](model/prepare_mnist.py) rebuilds the 14×14 dataset from the original MNIST files (checksums verified), and its first five images are byte-identical to the test images in the Arduino project.
 
@@ -91,6 +93,7 @@ Needs [Icarus Verilog](https://steveicarus.github.io/iverilog/) (`brew install i
 ```bash
 make test        # 1,000 images, about 15 s on an Apple M2; ends with ALL TESTS PASSED
 make test-full   # all 10,000 images, about 2.5 minutes on an M2 (what CI runs)
+make mutants     # the 4 planted bugs in the Verification table, about 1 minute
 make synth       # resource reports for ECP5, Gowin and iCE40
 make timing      # place and route on an ECP5-45F, max clock frequency
 ```
@@ -107,7 +110,7 @@ clocks per image      : 273 (min) to 273 (max)
 PASS
 ```
 
-Built with an AI pair programmer; every result above is reproducible with the commands shown, except the figures labelled as coming from the UNO or from earlier versions.
+Built with an AI pair programmer. Every result above can be reproduced with the commands shown, except these, which are labelled where they appear: the UNO figures (30.7 ms per image, and the 5 images the UNO ran), the figures from earlier versions of the design (33 to 37 MHz before pipelining, 201 vs 337 LUTs per lane), the LUT counts from an older Yosys (3,125 on the ECP5, 10,766 on the iCE40; Yosys 0.69 gives 2,785 on the ECP5), and the match between the first five images and the Arduino project's `weights.h`, which needs that repo. Run times are approximate.
 
 ## Layout
 
@@ -115,6 +118,7 @@ Built with an AI pair programmer; every result above is reproducible with the co
 rtl/mac_lane.v            one int8 x uint7 multiply-accumulate lane
 rtl/tensor_core.v         lanes, ROMs, requantizer, argmax, control FSM
 tb/tb_tensor_core.v       bit-exact checks on every image
+mutants/                  planted bugs (sed scripts), their runner and mutants.log
 model/golden.py           integer-only golden model, writes rom/ and sim/
 model/prepare_mnist.py    rebuilds data/ from the original MNIST files
 model/tinyml_weights_int8.npz   trained weights from tinyml-mnist-uno
