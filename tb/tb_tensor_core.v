@@ -4,7 +4,8 @@
 //   - all 10 layer-2 accumulators, and
 //   - the predicted digit
 // match the Python golden model bit for bit. Also reports accuracy against
-// the true labels and the clocks per image.
+// the true labels and the clocks per image. If an image never finishes (a
+// hung FSM), prints "FAIL: watchdog" and stops.
 //
 // Runs all 10,000 images by default; `vvp sim/tb_tensor_core +n=500` for fewer.
 `timescale 1ns/1ps
@@ -13,6 +14,10 @@ module tb_tensor_core;
     `include "rom/params.vh"
 
     localparam N_MAX = 10000, N_IN = 196, N_HID = 32, N_OUT = 10, ACC_W = 24;
+    // A correct design finishes an image in 273 clocks. If done never comes
+    // (a hung FSM), stop after this many and print FAIL instead of waiting
+    // forever, which would also hang CI.
+    localparam WATCHDOG = 10000;
 
     reg [7:0]             images   [0:N_MAX*N_IN-1];
     reg [7:0]             labels   [0:N_MAX-1];
@@ -36,7 +41,7 @@ module tb_tensor_core;
         .digit(digit), .cycles(cycles)
     );
 
-    integer n, i, p;
+    integer n, i, p, wait_clk;
     integer bad_h = 0, bad_acc2 = 0, bad_pred = 0, correct = 0;
     integer min_cyc = 65535, max_cyc = 0;
 
@@ -59,7 +64,16 @@ module tb_tensor_core;
             end
             @(negedge clk);  img_we = 1'b0;  start = 1'b1;
             @(negedge clk);  start = 1'b0;
-            while (!done) @(negedge clk);
+            wait_clk = 0;
+            while (!done) begin
+                @(negedge clk);
+                wait_clk = wait_clk + 1;
+                if (wait_clk == WATCHDOG) begin
+                    $display("FAIL: watchdog, image %0d not done after %0d clocks",
+                             i, WATCHDOG);
+                    $finish;
+                end
+            end
 
             if (dut.h_all !== exp_h[i]) begin
                 if (bad_h < 3) $display("image %0d: hidden activations differ", i);
