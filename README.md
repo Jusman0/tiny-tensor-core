@@ -107,6 +107,8 @@ clocks per image      : 273 (min) to 273 (max)
 PASS
 ```
 
+Built with an AI pair programmer; every result above is reproducible with the commands shown, except the figures labelled as coming from the UNO or from earlier versions.
+
 ## Layout
 
 ```
