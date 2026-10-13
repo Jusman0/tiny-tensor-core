@@ -1,0 +1,4 @@
+# Tools that produced the files in this folder (2026-10-12, Apple M2, macOS 15.1).
+# From PyPI: yowasp-yosys 0.69.0.0.post1233, yowasp-nextpnr-ecp5 0.11.1.0.post826.
+Yosys 0.69 (git sha1 9f75ca1f9, Release, Clang /workspace/YoWASP/yosys/wasi-sdk-33.0-x86_64-linux/share/cmake/../..//bin/clang++ 22.1.0)
+"yowasp-nextpnr-ecp5" -- Next Generation Place and Route (Version nextpnr-0.11.1)

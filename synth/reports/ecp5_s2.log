@@ -1,0 +1,289 @@
+
+
+Info: Logic utilisation before packing:
+Info:     Total LUT4s:      3957/43848     9%
+Info:         logic LUTs:   2785/43848     6%
+Info:         carry LUTs:   1172/43848     2%
+Info:           RAM LUTs:      0/ 5481     0%
+Info:          RAMW LUTs:      0/10962     0%
+
+Info:      Total DFFs:      1574/43848     3%
+
+Info: Packing IOs..
+Info: Packing constants..
+Info: Packing carries...
+Info: Packing LUTs...
+Info: Packing LUT5-7s...
+Info: Packing FFs...
+Info:     1188 FFs paired with LUTs.
+Info: Generating derived timing constraints...
+Info: Promoting globals...
+Info:     promoting clock net clk$TRELLIS_IO_IN to global network
+Info: Checksum: 0x9ff51b42
+
+Info: Device utilisation:
+Info: 	          TRELLIS_IO:      42/    245    17%
+Info: 	                DCCA:       1/     56     1%
+Info: 	              DP16KD:       9/    108     8%
+Info: 	          MULT18X18D:      44/     72    61%
+Info: 	              ALU54B:       0/     36     0%
+Info: 	             EHXPLLL:       0/      4     0%
+Info: 	             EXTREFB:       0/      2     0%
+Info: 	                DCUA:       0/      2     0%
+Info: 	           PCSCLKDIV:       0/      2     0%
+Info: 	             IOLOGIC:       0/    160     0%
+Info: 	            SIOLOGIC:       0/     85     0%
+Info: 	                 GSR:       0/      1     0%
+Info: 	               JTAGG:       0/      1     0%
+Info: 	                OSCG:       0/      1     0%
+Info: 	               SEDGA:       0/      1     0%
+Info: 	                 DTR:       0/      1     0%
+Info: 	             USRMCLK:       0/      1     0%
+Info: 	             CLKDIVF:       0/      4     0%
+Info: 	           ECLKSYNCB:       0/     10     0%
+Info: 	             DLLDELD:       0/      8     0%
+Info: 	              DDRDLL:       0/      4     0%
+Info: 	             DQSBUFM:       0/     10     0%
+Info: 	     TRELLIS_ECLKBUF:       0/      8     0%
+Info: 	        ECLKBRIDGECS:       0/      2     0%
+Info: 	                DCSC:       0/      2     0%
+Info: 	          TRELLIS_FF:    1574/  43848     3%
+Info: 	        TRELLIS_COMB:    4155/  43848     9%
+Info: 	        TRELLIS_RAMW:       0/   5481     0%
+
+Info: Placed 0 cells based on constraints.
+Info: Creating initial analytic placement for 2810 cells, random placement wirelen = 298295.
+Info: Running main analytical placer, max placement attempts per cell = 4241328.
+Info: HeAP Placer Time: 3.86s
+Info:   of which solving equations: 2.46s
+Info:   of which spreading cells: 0.28s
+Info:   of which strict legalisation: 0.69s
+
+Info: Running simulated annealing placer for refinement.
+Info: SA placement time 4.59s
+
+Info: Max frequency for clock '$glbnet$clk$TRELLIS_IO_IN': 48.77 MHz (FAIL at 50.00 MHz)
+
+Info: Max delay <async>                           -> posedge $glbnet$clk$TRELLIS_IO_IN: 13.04 ns
+Info: Max delay posedge $glbnet$clk$TRELLIS_IO_IN -> <async>                          : 5.97 ns
+
+Info: Slack histogram:
+Info:  legend: * represents 7 endpoint(s)
+Info:          + represents [1,7) endpoint(s)
+Info: [  -504,    484) |*********+
+Info: [   484,   1472) |***************************************************+
+Info: [  1472,   2460) |**************************+
+Info: [  2460,   3448) |**************+
+Info: [  3448,   4436) |*+
+Info: [  4436,   5424) |****+
+Info: [  5424,   6412) |*****+
+Info: [  6412,   7400) |**+
+Info: [  7400,   8388) |******************+
+Info: [  8388,   9376) |*****************************************+
+Info: [  9376,  10364) |**********+
+Info: [ 10364,  11352) |****+
+Info: [ 11352,  12340) |******+
+Info: [ 12340,  13328) |*********+
+Info: [ 13328,  14316) |****************+
+Info: [ 14316,  15304) |*******************+
+Info: [ 15304,  16292) |**************************************************+
+Info: [ 16292,  17280) |************************************************************ 
+Info: [ 17280,  18268) |********************************+
+Info: [ 18268,  19256) |***********+
+Info: Checksum: 0x67349c41
+Info: Routing globals...
+Info:     routing clock net $glbnet$clk$TRELLIS_IO_IN using global 0
+
+Info: Routing..
+Info: Setting up routing queue.
+Info: Routing 15585 arcs.
+Info: Routing complete.
+Info: Router1 time 18.36s
+Info: Checksum: 0x416ca988
+
+Info: Critical path report for clock '$glbnet$clk$TRELLIS_IO_IN' (posedge -> posedge):
+Info:       type curr  total name
+Info:   clk-to-q  5.83  5.83 Source w1_rom.0.1.DOB6
+Info:    routing  3.38  9.21 Net w1_q[60] (42,10) -> (18,22)
+Info:                          Sink l1[7].u.p_MULT18X18D_P9.A4
+Info:                          Defined in:
+Info:                               rtl/tensor_core.v:66.23-66.27
+Info:      logic  3.93  13.14 Source l1[7].u.p_MULT18X18D_P9.P2
+Info:    routing  3.99  17.13 Net l1[7].u.p[2] (18,22) -> (47,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_4$CCU2_COMB0.A
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:23.29-23.30
+Info:      logic  0.45  17.58 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_4$CCU2_COMB0.FCO
+Info:    routing  0.00  17.58 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_4$CCU2_FCI_INT (47,7) -> (47,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_4$CCU2_COMB1.FCI
+Info:      logic  0.00  17.58 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_4$CCU2_COMB1.FCO
+Info:    routing  0.00  17.58 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_4_COUT (47,7) -> (47,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_3$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  17.65 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_3$CCU2_COMB0.FCO
+Info:    routing  0.00  17.65 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_3$CCU2_FCI_INT (47,7) -> (47,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_3$CCU2_COMB1.FCI
+Info:      logic  0.00  17.65 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_3$CCU2_COMB1.FCO
+Info:    routing  0.00  17.65 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_3_COUT (47,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_7$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  17.72 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_7$CCU2_COMB0.FCO
+Info:    routing  0.00  17.72 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_7$CCU2_FCI_INT (48,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_7$CCU2_COMB1.FCI
+Info:      logic  0.00  17.72 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_7$CCU2_COMB1.FCO
+Info:    routing  0.00  17.72 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_7_COUT (48,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_8$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  17.79 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_8$CCU2_COMB0.FCO
+Info:    routing  0.00  17.79 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_8$CCU2_FCI_INT (48,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_8$CCU2_COMB1.FCI
+Info:      logic  0.00  17.79 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_8$CCU2_COMB1.FCO
+Info:    routing  0.00  17.79 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_8_COUT (48,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_9$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  17.86 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_9$CCU2_COMB0.FCO
+Info:    routing  0.00  17.86 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_9$CCU2_FCI_INT (48,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_9$CCU2_COMB1.FCI
+Info:      logic  0.00  17.86 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_9$CCU2_COMB1.FCO
+Info:    routing  0.00  17.86 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_9_COUT (48,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_2$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  17.93 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_2$CCU2_COMB0.FCO
+Info:    routing  0.00  17.93 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_2$CCU2_FCI_INT (48,7) -> (48,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_2$CCU2_COMB1.FCI
+Info:      logic  0.00  17.93 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_2$CCU2_COMB1.FCO
+Info:    routing  0.00  17.93 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_2_COUT (48,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_1$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  18.00 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_1$CCU2_COMB0.FCO
+Info:    routing  0.00  18.00 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_1$CCU2_FCI_INT (49,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_1$CCU2_COMB1.FCI
+Info:      logic  0.00  18.00 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_1$CCU2_COMB1.FCO
+Info:    routing  0.00  18.00 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_1_COUT (49,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  18.07 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1$CCU2_COMB0.FCO
+Info:    routing  0.00  18.07 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1$CCU2_FCI_INT (49,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1$CCU2_COMB1.FCI
+Info:      logic  0.00  18.07 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1$CCU2_COMB1.FCO
+Info:    routing  0.00  18.07 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_COUT (49,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  18.14 Source l1[7].u.p_CCU2C_A1$CCU2_COMB0.FCO
+Info:    routing  0.00  18.14 Net l1[7].u.p_CCU2C_A1$CCU2_FCI_INT (49,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1$CCU2_COMB1.FCI
+Info:      logic  0.00  18.14 Source l1[7].u.p_CCU2C_A1$CCU2_COMB1.FCO
+Info:    routing  0.00  18.14 Net l1[7].u.p_CCU2C_A1_COUT (49,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_10$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  18.22 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_10$CCU2_COMB0.FCO
+Info:    routing  0.00  18.22 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_10$CCU2_FCI_INT (49,7) -> (49,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_10$CCU2_COMB1.FCI
+Info:      logic  0.00  18.22 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_10$CCU2_COMB1.FCO
+Info:    routing  0.00  18.22 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_10_COUT (49,7) -> (50,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_5$CCU2_COMB0.FCI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:74.7-80.4
+Info:                               /share/lattice/ccu2c_sim.vh:9.9-9.13
+Info:      logic  0.07  18.29 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_5$CCU2_COMB0.FCO
+Info:    routing  0.00  18.29 Net l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_5$CCU2_FCI_INT (50,7) -> (50,7)
+Info:                          Sink l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_5$CCU2_COMB1.FCI
+Info:      logic  0.40  18.69 Source l1[7].u.p_CCU2C_A1_S1_CCU2C_S1_5$CCU2_COMB1.F
+Info:    routing  0.13  18.82 Net l1[7].u.p_CCU2C_A1_S1[23] (50,7) -> (50,7)
+Info:                          Sink l1[7].u.acc_TRELLIS_FF_Q_23.DI
+Info:                          Defined in:
+Info:                               rtl/mac_lane.v:29.24-29.32
+Info:                               /share/lattice/arith_map_ccu2c.v:34.26-34.27
+Info:      setup  0.00  18.82 Source l1[7].u.acc_TRELLIS_FF_Q_23.DI
+Info: 11.32 ns logic, 7.50 ns routing
+
+Info: Critical path report for cross-domain path '<async>' -> 'posedge $glbnet$clk$TRELLIS_IO_IN':
+Info:       type curr  total name
+Info:     source  0.00  0.00 Source rst$tr_io.O
+Info:    routing  4.59  4.59 Net rst$TRELLIS_IO_IN (0,17) -> (60,5)
+Info:                          Sink l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_Z_1.A
+Info:                          Defined in:
+Info:                               rtl/tensor_core.v:30.24-30.27
+Info:      logic  0.24  4.82 Source l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_Z_1.F
+Info:    routing  1.79  6.61 Net l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D[2] (60,5) -> (73,4)
+Info:                          Sink l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_D_Z_PFUMX_BLUT_Z_L6MUX21_D0_D1_PFUMX_Z_BLUT_LUT4_Z.C
+Info:                          Defined in:
+Info:                               /share/lattice/cells_map_trellis.v:108.23-108.24
+Info:      logic  0.40  7.01 Source l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_D_Z_PFUMX_BLUT_Z_L6MUX21_D0_D1_PFUMX_Z_BLUT_LUT4_Z.OFX
+Info:    routing  0.00  7.01 Net l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_D_Z_PFUMX_BLUT_Z_L6MUX21_D0_D1 (73,4) -> (73,4)
+Info:                          Sink l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_D_Z_PFUMX_BLUT_Z_L6MUX21_D0_D1_PFUMX_Z_ALUT_LUT4_Z.FXB
+Info:                          Defined in:
+Info:                               /share/lattice/cells_map_trellis.v:141.38-141.40
+Info:      logic  0.24  7.26 Source l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_D_Z_PFUMX_BLUT_Z_L6MUX21_D0_D1_PFUMX_Z_ALUT_LUT4_Z.OFX
+Info:    routing  1.77  9.03 Net l2_first_TRELLIS_FF_Q_DI_LUT4_Z_D_LUT4_D_Z_PFUMX_BLUT_Z_L6MUX21_D0_Z (73,4) -> (74,23)
+Info:                          Sink best_k_TRELLIS_FF_Q_2.CE
+Info:      setup  0.00  9.03 Source best_k_TRELLIS_FF_Q_2.CE
+Info: 0.88 ns logic, 8.15 ns routing
+
+Info: Critical path report for cross-domain path 'posedge $glbnet$clk$TRELLIS_IO_IN' -> '<async>':
+Info:       type curr  total name
+Info:   clk-to-q  0.52  0.52 Source cycles_TRELLIS_FF_Q.Q
+Info:    routing  3.68  4.21 Net cycles[0]$TRELLIS_IO_OUT (41,42) -> (18,71)
+Info:                          Sink cycles[0]$tr_io.I
+Info:                          Defined in:
+Info:                               rtl/tensor_core.v:38.24-38.30
+Info: 0.52 ns logic, 3.68 ns routing
+
+Info: Max frequency for clock '$glbnet$clk$TRELLIS_IO_IN': 53.14 MHz (PASS at 50.00 MHz)
+
+Info: Max delay <async>                           -> posedge $glbnet$clk$TRELLIS_IO_IN: 9.03 ns
+Info: Max delay posedge $glbnet$clk$TRELLIS_IO_IN -> <async>                          : 4.21 ns
+
+Info: Slack histogram:
+Info:  legend: * represents 9 endpoint(s)
+Info:          + represents [1,9) endpoint(s)
+Info: [  1181,   2075) |***********+
+Info: [  2075,   2969) |***********************************************+
+Info: [  2969,   3863) |**********************+
+Info: [  3863,   4757) |**+
+Info: [  4757,   5651) | 
+Info: [  5651,   6545) | 
+Info: [  6545,   7439) |*+
+Info: [  7439,   8333) |*******+
+Info: [  8333,   9227) |**************+
+Info: [  9227,  10121) |*********************************+
+Info: [ 10121,  11015) |******+
+Info: [ 11015,  11909) |****+
+Info: [ 11909,  12803) |****+
+Info: [ 12803,  13697) |***+
+Info: [ 13697,  14591) |***+
+Info: [ 14591,  15485) |***************************+
+Info: [ 15485,  16379) |*******************+
+Info: [ 16379,  17273) |***********************************+
+Info: [ 17273,  18167) |************************************************************ 
+Info: [ 18167,  19061) |***************+
+
+Info: Program finished normally.

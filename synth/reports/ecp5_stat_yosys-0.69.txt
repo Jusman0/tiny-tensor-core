@@ -1,0 +1,23 @@
+
+4. Printing statistics.
+
+=== tensor_core ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     3626 wires
+    11929 wire bits
+     3626 public wires
+    11929 public wire bits
+       10 ports
+       42 port bits
+     5505 cells
+       42   $scopeinfo
+      586   CCU2C
+        9   DP16KD
+      138   L6MUX21
+     2785   LUT4
+       44   MULT18X18D
+      327   PFUMX
+     1574   TRELLIS_FF
+

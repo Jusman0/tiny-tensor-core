@@ -9,8 +9,8 @@ My [TinyML MNIST network](https://github.com/Jusman0/tinyml-mnist-uno) running e
 | All 10,000 MNIST test images | hidden activations, layer-2 accumulators and predicted digit **bit-exact** on **10,000 / 10,000** |
 | Accuracy | **96.48%**, the same as the float version on the Arduino. Not one prediction differs. |
 | Clocks per image | **273**. The Arduino UNO takes about 491,000 (30.7 ms at 16 MHz). |
-| Placed and routed on an ECP5-45F FPGA | **50 MHz** (median of 3 seeds), so 5.5 µs per image of compute |
-| ECP5-45F resources | 3,125 LUT4s, 586 carry cells, 44 DSP multipliers, 9 block RAMs |
+| Placed and routed on an ECP5-45F FPGA | **~50 MHz** post-route estimate (nextpnr-ecp5, out-of-context, median of 3 seeds = 51.6 MHz; logs in [`synth/reports/`](synth/reports/)), so about 5.5 µs of compute per image |
+| ECP5-45F resources | 3,125 LUT4s, 586 carry cells, 44 DSP multipliers, 9 block RAMs (LUT count from an older Yosys; Yosys 0.69 gives 2,785 LUT4s) |
 
 ## How it works
 
@@ -67,7 +67,7 @@ The first version simulated perfectly but was far too big for the FPGA I had in 
 - **`acc_all[24*idx +: 24]` is a barrel shifter.** It reads like an array lookup, but because 24 isn't a power of two it synthesizes into wide shifters. An explicit multiplexer (a `for` loop comparing `idx == k`) is much smaller.
 - **Use what the data guarantees.** Pixels and post-ReLU activations are always 0 to 127, so each lane only needs an 8×7 multiplier, not a signed 8×8. That's 201 instead of 337 LUTs per lane on an iCE40, about 40% smaller.
 - **Find the critical path, then pipeline it.** Place-and-route showed the requantizer (select neuron → 24×17 multiply → add → shift → clamp) capping the whole design at 33 to 37 MHz. Splitting it into three pipeline stages raised the clock to ~50 MHz and added **zero** clocks per image, because layer 2 reads each activation about 30 clocks after it's written.
-- **Pick the FPGA for the design.** Without hardware multipliers, an iCE40 needs 10,766 LUTs, more than the 7,680 on an HX8K. An ECP5 maps the 42 lane multipliers onto its DSP blocks and uses only 3,125 LUTs.
+- **Pick the FPGA for the design.** Without hardware multipliers, an iCE40 needs 10,766 LUTs, more than the 7,680 on an HX8K. An ECP5 maps the 42 lane multipliers onto its DSP blocks and uses only 3,125 LUTs. (These LUT counts are from the committed `synth/*_stat.txt`, made with an older Yosys whose version wasn't recorded. Yosys 0.69 gives 2,785 on the ECP5, with the same DSP, block RAM, carry and flip-flop counts: see [`synth/reports/`](synth/reports/).)
 
 ## Verification
 
@@ -119,6 +119,7 @@ model/tinyml_weights_int8.npz   trained weights from tinyml-mnist-uno
 data/mnist_test_14x14.npz       MNIST test set, 14x14, quantized to 0..127
 rom/                      weights, biases and M1 for the hardware
 synth/                    Yosys scripts and ECP5 place-and-route
+synth/reports/            nextpnr logs and tool versions behind the ~50 MHz
 ```
 
 MNIST is by Yann LeCun, Corinna Cortes and Christopher Burges.
