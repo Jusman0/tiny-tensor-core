@@ -7,7 +7,7 @@ My [TinyML MNIST network](https://github.com/Jusman0/tinyml-mnist-uno) running e
 | | |
 |---|---|
 | All 10,000 MNIST test images | hidden activations, layer-2 accumulators and predicted digit **bit-exact** on **10,000 / 10,000** |
-| Accuracy | **96.48%**, the same as the float version on the Arduino. Not one prediction differs. |
+| Accuracy | **96.48%**, the same as the Arduino's float version of the network, emulated in NumPy on all 10,000 images (the UNO itself ran 5). Not one prediction differs. |
 | Clocks per image | **273**. The Arduino UNO takes about 491,000 (30.7 ms at 16 MHz). |
 | Placed and routed on an ECP5-45F FPGA | **~50 MHz** post-route estimate (nextpnr-ecp5, out-of-context, median of 3 seeds = 51.6 MHz; logs in [`synth/reports/`](synth/reports/)), so about 5.5 µs of compute per image |
 | ECP5-45F resources | 3,125 LUT4s, 586 carry cells, 44 DSP multipliers, 9 block RAMs (LUT count from an older Yosys; Yosys 0.69 gives 2,785 LUT4s) |
@@ -77,20 +77,20 @@ For every image, the testbench checks three things against the golden model, bit
 |---|---|---|
 | Accumulator base left unsigned (negative products zero-extended) | 11.3% | yes |
 | 16-bit accumulators instead of 24 | 81.0% | yes |
-| Rounding term missing from requantization | 98.3%, the same as the correct design | **yes, only by the bit-exact check** |
+| Rounding term missing from requantization | 98.3%, the same as the correct design | **yes**: internal values differ on 300 / 300 images, the predicted digit on only 1 / 300 |
 | Argmax keeps the last maximum on ties (`>=`) | 98.3% | no |
 
-The rounding bug is why the testbench compares internal values rather than just accuracy: the broken design scored exactly as well on these images. The tie-breaking bug isn't caught because no image in all 10,000 has two equal top scores (the closest gap is 1), so the data can't exercise it. A directed test with forced ties would.
+The rounding bug is why the testbench compares internal values rather than just accuracy or the digit: the broken design scored exactly as well on these images, and its predicted digit differed from the golden model on only 1 of the 300. The tie-breaking bug isn't caught because no image in all 10,000 has two equal top scores (the closest gap is 1), so the data can't exercise it. A directed test with forced ties would.
 
 The data pipeline is checked too. [`model/prepare_mnist.py`](model/prepare_mnist.py) rebuilds the 14×14 dataset from the original MNIST files (checksums verified), and its first five images are byte-identical to the test images in the Arduino project.
 
 ## Run it
 
-Needs [Icarus Verilog](https://steveicarus.github.io/iverilog/) (`brew install icarus-verilog`) and Python 3 with NumPy. Yosys and nextpnr (in the [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build)) are only for synthesis.
+Needs [Icarus Verilog](https://steveicarus.github.io/iverilog/) (`brew install icarus-verilog`) and Python 3 with NumPy (if NumPy is in a virtualenv, add `PYTHON=path/to/venv/bin/python` to the make command). Yosys and nextpnr (in the [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build)) are only for synthesis.
 
 ```bash
-make test        # 1,000 images, about a minute; ends with ALL TESTS PASSED
-make test-full   # all 10,000 images, a few minutes (what CI runs)
+make test        # 1,000 images, about 15 s on an Apple M2; ends with ALL TESTS PASSED
+make test-full   # all 10,000 images, about 2.5 minutes on an M2 (what CI runs)
 make synth       # resource reports for ECP5, Gowin and iCE40
 make timing      # place and route on an ECP5-45F, max clock frequency
 ```

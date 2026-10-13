@@ -1,5 +1,5 @@
-# make test       1,000 MNIST images through the RTL (about a minute)
-# make test-full  all 10,000 images (a few minutes)
+# make test       1,000 MNIST images through the RTL (about 15 s on an Apple M2)
+# make test-full  all 10,000 images (about 2.5 minutes on an Apple M2)
 # make golden     regenerate rom/ and sim/ from the Python golden model
 # make synth      resource reports for ECP5, Gowin and iCE40 FPGAs
 # make timing     place and route on an ECP5-45F, max clock frequency

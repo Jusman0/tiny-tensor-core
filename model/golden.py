@@ -18,7 +18,9 @@ Writes:
   sim/       test images and expected values for the testbench
 
 and prints how the integer-only network compares with the float version
-running on the Arduino, over all 10,000 MNIST test images.
+the Arduino runs, over all 10,000 MNIST test images. The float version is
+computed here in NumPy with the Arduino's arithmetic (the UNO itself only
+ran 5 test images).
 
 Run from the repo root:  python3 model/golden.py
 """
@@ -62,7 +64,8 @@ def run_integer(x, w1, w2, m1, b1q, b2q):
 
 
 def run_float(x, q, w1, w2):
-    """The Arduino / stage A path: float rescale and bias between layers."""
+    """The Arduino / stage A path, emulated in NumPy: float rescale and bias
+    between layers."""
     a1 = np.maximum((x @ w1.T) * np.float32(q["S1"]) + q["b1"], 0.0)
     h = np.round(a1 / np.float32(q["SH"])).clip(0, 127).astype(np.int64)
     logits = (h @ w2.T) * np.float32(q["S2"]) + q["b2"]
@@ -113,9 +116,10 @@ def main():
 
     n = len(labels)
     print(f"M1 = {m1}, shift = {SHIFT}")
-    print(f"float path   (Arduino): {100 * (pred_f == labels).mean():.2f}% "
-          f"on {n} MNIST test images")
-    print(f"integer path (RTL)    : {100 * (pred == labels).mean():.2f}%")
+    print(f"float path   (Arduino math, in NumPy): "
+          f"{100 * (pred_f == labels).mean():.2f}% on {n} MNIST test images")
+    print(f"integer path (RTL)                   : "
+          f"{100 * (pred == labels).mean():.2f}%")
     print(f"hidden values that differ: {(h != hf).sum()} of {h.size} "
           f"(max difference {np.abs(h - hf).max()})")
     print(f"predictions that differ  : {(pred != pred_f).sum()} of {n}")
