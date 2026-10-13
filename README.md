@@ -8,7 +8,7 @@ My [TinyML MNIST network](https://github.com/Jusman0/tinyml-mnist-uno) running e
 |---|---|
 | All 10,000 MNIST test images | hidden activations, layer-2 accumulators and predicted digit **bit-exact** on **10,000 / 10,000** |
 | Accuracy | **96.48%**, the same as the Arduino's float version of the network, emulated in NumPy on all 10,000 images (the UNO itself ran 5). Not one prediction differs. |
-| Clocks per image | **273**. The Arduino UNO takes about 491,000 (30.7 ms at 16 MHz). |
+| Clocks per image | **273**. For comparison, the Arduino UNO took 30.7 ms per image (about 491,000 clocks at 16 MHz), measured with `micros()` in the [tinyml-mnist-uno](https://github.com/Jusman0/tinyml-mnist-uno) run (UNO serial log to be committed). |
 | Placed and routed on an ECP5-45F FPGA | **~50 MHz** post-route estimate (nextpnr-ecp5, out-of-context, median of 3 seeds = 51.6 MHz; logs in [`synth/reports/`](synth/reports/)), so about 5.5 µs of compute per image |
 | ECP5-45F resources | 3,125 LUT4s, 586 carry cells, 44 DSP multipliers, 9 block RAMs (LUT count from an older Yosys; Yosys 0.69 gives 2,785 LUT4s) |
 
@@ -65,8 +65,8 @@ The first version simulated perfectly but was far too big for the FPGA I had in 
 
 - **Size the math, not the expression.** `wire [63:0] sum = acc * M1 + ...` makes synthesis build a 64×64 multiplier. The product only needs 24 + 17 = 41 bits.
 - **`acc_all[24*idx +: 24]` is a barrel shifter.** It reads like an array lookup, but because 24 isn't a power of two it synthesizes into wide shifters. An explicit multiplexer (a `for` loop comparing `idx == k`) is much smaller.
-- **Use what the data guarantees.** Pixels and post-ReLU activations are always 0 to 127, so each lane only needs an 8×7 multiplier, not a signed 8×8. That's 201 instead of 337 LUTs per lane on an iCE40, about 40% smaller.
-- **Find the critical path, then pipeline it.** Place-and-route showed the requantizer (select neuron → 24×17 multiply → add → shift → clamp) capping the whole design at 33 to 37 MHz. Splitting it into three pipeline stages raised the clock to ~50 MHz and added **zero** clocks per image, because layer 2 reads each activation about 30 clocks after it's written.
+- **Use what the data guarantees.** Pixels and post-ReLU activations are always 0 to 127, so each lane only needs an 8×7 multiplier, not a signed 8×8. In my earlier per-lane synthesis runs that was 201 instead of 337 LUTs per lane on an iCE40, about 40% smaller (the per-lane script isn't committed).
+- **Find the critical path, then pipeline it.** In an earlier, un-pipelined version, place-and-route showed the requantizer (select neuron → 24×17 multiply → add → shift → clamp) capping the whole design at about 33 to 37 MHz. That version isn't in the git history, so this number can't be re-checked from the repo. Splitting the requantizer into three pipeline stages gives today's ~50 MHz ([logs](synth/reports/)), where the slowest path is now in the layer-1 MAC lanes, and added **zero** clocks per image, because layer 2 reads each activation about 30 clocks after it's written.
 - **Pick the FPGA for the design.** Without hardware multipliers, an iCE40 needs 10,766 LUTs, more than the 7,680 on an HX8K. An ECP5 maps the 42 lane multipliers onto its DSP blocks and uses only 3,125 LUTs. (These LUT counts are from the committed `synth/*_stat.txt`, made with an older Yosys whose version wasn't recorded. Yosys 0.69 gives 2,785 on the ECP5, with the same DSP, block RAM, carry and flip-flop counts: see [`synth/reports/`](synth/reports/).)
 
 ## Verification
