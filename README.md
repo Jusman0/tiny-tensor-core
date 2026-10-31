@@ -2,17 +2,17 @@
 
 [![tests](https://github.com/Jusman0/tiny-tensor-core/actions/workflows/test.yml/badge.svg)](https://github.com/Jusman0/tiny-tensor-core/actions/workflows/test.yml)
 
-My [TinyML MNIST network](https://github.com/Jusman0/tinyml-mnist-uno) running entirely in hardware: 32 parallel multiply-accumulate lanes, integer-only requantization between layers, and an argmax that outputs the digit. It's written in Verilog and checked bit-exact against a Python golden model on all 10,000 MNIST test images.
+The [TinyML MNIST network](https://github.com/Jusman0/tinyml-mnist-uno) in Verilog: 32 multiply-accumulate lanes, integer-only requantization and an argmax digit output, checked against a Python golden model.
 
 | | |
 |---|---|
-| All 10,000 MNIST test images | hidden activations, layer-2 accumulators and predicted digit **bit-exact** on **10,000 / 10,000** |
-| Accuracy | **96.48%**, the same as the Arduino's float version of the network, emulated in NumPy on all 10,000 images (the UNO itself ran 5). Not one prediction differs. |
-| Clocks per image | **273**. For comparison, the Arduino UNO took 30.7 ms per image (about 491,000 clocks at 16 MHz), measured with `micros()` in the [tinyml-mnist-uno](https://github.com/Jusman0/tinyml-mnist-uno) run (UNO serial log to be committed). |
-| Placed and routed on an ECP5-45F FPGA | **~50 MHz** post-route estimate (nextpnr-ecp5, out-of-context, median of 3 seeds = 51.6 MHz; logs in [`synth/reports/`](synth/reports/)), so about 5.5 µs of compute per image |
+| Bit-exact | hidden activations, layer-2 accumulators and predicted digit on 10,000 / 10,000 MNIST test images |
+| Accuracy | 96.48%; every prediction matches the Arduino's float network, emulated in NumPy on all 10,000 images (the UNO itself ran 5) |
+| Clocks per image | 273. Arduino UNO: 30.7 ms (about 491,000 clocks at 16 MHz), measured with `micros()` in the [tinyml-mnist-uno](https://github.com/Jusman0/tinyml-mnist-uno) run (UNO serial log to be committed) |
+| ECP5-45F place and route | ~50 MHz post-route estimate (nextpnr-ecp5, out-of-context, median of 3 seeds = 51.6 MHz; [`synth/reports/`](synth/reports/)), about 5.5 µs of compute per image |
 | ECP5-45F resources | 3,125 LUT4s, 586 carry cells, 44 DSP multipliers, 9 block RAMs (LUT count from an older Yosys; Yosys 0.69 gives 2,785 LUT4s) |
 
-## How it works
+## Architecture
 
 ```
                     pixel x[i] (broadcast)
@@ -36,17 +36,17 @@ My [TinyML MNIST network](https://github.com/Jusman0/tinyml-mnist-uno) running e
 | Phase | Clocks | Work |
 |---|---|---|
 | Layer 1 | 196 + 1 | 6,272 MACs, 32 per clock |
-| Requantize | 32 | 32 fixed-point multiplies |
+| Requantization | 32 | 32 fixed-point multiplies |
 | Layer 2 | 32 + 1 | 320 MACs, 10 per clock |
 | Argmax | 10 | bias add and compare |
 | Done | 1 | |
 | **Total** | **273** | |
 
-Weights live in on-chip ROM, loaded from `rom/*.hex`. The 196 pixels go in through a simple write port, then `start`, and `done` pulses with the digit.
+Weights sit in on-chip ROM (`rom/*.hex`). Pixels load through a write port; `start` runs the network and `done` pulses with the digit.
 
 ## Integer-only requantization
 
-The Arduino version rescales between layers with floats: `h = round((acc * S1 + b1) / SH)`. Hardware accelerators avoid floating point there, so this replaces it with one fixed-point multiply and a shift:
+The Arduino rescales between layers in floating point, `h = round((acc * S1 + b1) / SH)`. The hardware uses one fixed-point multiply and shift:
 
 ```
 h = clamp((acc * M1 + B1q + 2^23) >> 24, 0, 127)
@@ -55,40 +55,40 @@ M1  = round(S1 / SH * 2^24) = 31,942     one multiplier shared by every neuron
 B1q = round(b1 / SH * 2^24)              bias in the same fixed-point units
 ```
 
-The clamp at 0 is the ReLU. Layer 2 needs no rescaling at all: every logit is multiplied by the same positive S2, which can't change which one is largest, so the hardware just compares `acc2 + round(b2 / S2)`.
+The clamp at 0 is the ReLU. Layer 2 needs no rescaling: a common positive scale S2 cannot change the argmax, so the hardware compares `acc2 + round(b2 / S2)`.
 
-The cost, measured over all 10,000 test images ([`model/golden.py`](model/golden.py)): 19 of 320,000 hidden activations come out 1 different from the float version, and **0 of 10,000 predictions change**.
+Over all 10,000 test images ([`model/golden.py`](model/golden.py)), 19 of 320,000 hidden activations differ by 1 from the float version and 0 of 10,000 predictions change.
 
-## What synthesis taught me
+## Synthesis notes
 
-The first version simulated perfectly but was far too big for the FPGA I had in mind. Each fix is in the code with a comment:
+The first version simulated correctly but did not fit the target FPGA. Fixes, each commented in the code:
 
-- **Size the math, not the expression.** `wire [63:0] sum = acc * M1 + ...` makes synthesis build a 64×64 multiplier. The product only needs 24 + 17 = 41 bits.
-- **`acc_all[24*idx +: 24]` is a barrel shifter.** It reads like an array lookup, but because 24 isn't a power of two it synthesizes into wide shifters. An explicit multiplexer (a `for` loop comparing `idx == k`) is much smaller.
-- **Use what the data guarantees.** Pixels and post-ReLU activations are always 0 to 127, so each lane only needs an 8×7 multiplier, not a signed 8×8. In my earlier per-lane synthesis runs that was 201 instead of 337 LUTs per lane on an iCE40, about 40% smaller (the per-lane script isn't committed).
-- **Find the critical path, then pipeline it.** In an earlier, un-pipelined version, place-and-route showed the requantizer (select neuron → 24×17 multiply → add → shift → clamp) capping the whole design at about 33 to 37 MHz. That version isn't in the git history, so this number can't be re-checked from the repo. Splitting the requantizer into three pipeline stages gives today's ~50 MHz ([logs](synth/reports/)), where the slowest path is now in the layer-1 MAC lanes, and added **zero** clocks per image, because layer 2 reads each activation about 30 clocks after it's written.
-- **Pick the FPGA for the design.** Without hardware multipliers, an iCE40 needs 10,766 LUTs, more than the 7,680 on an HX8K. An ECP5 maps the 42 lane multipliers onto its DSP blocks and uses only 3,125 LUTs. (These LUT counts are from the committed `synth/*_stat.txt`, made with an older Yosys whose version wasn't recorded. Yosys 0.69 gives 2,785 on the ECP5, with the same DSP, block RAM, carry and flip-flop counts: see [`synth/reports/`](synth/reports/).)
+- `wire [63:0] sum = acc * M1 + ...` builds a 64×64 multiplier; the product needs only 24 + 17 = 41 bits.
+- `acc_all[24*idx +: 24]` becomes wide barrel shifters, since 24 is not a power of two. An explicit multiplexer (a `for` loop comparing `idx == k`) is much smaller.
+- Lane inputs (pixels, post-ReLU activations) are always 0 to 127, so each lane uses an 8×7 multiplier, not a signed 8×8: 201 vs 337 iCE40 LUTs per lane, about 40% smaller, in earlier per-lane runs (script not committed).
+- An earlier un-pipelined version, not in the git history, placed and routed at about 33 to 37 MHz, limited by the requantization path (select neuron → 24×17 multiply → add → shift → clamp). The figure cannot be re-checked from the repo. A 3-stage requantization pipeline gives the current ~50 MHz ([logs](synth/reports/)) and moves the slowest path into the layer-1 lanes. It costs zero clocks: layer 2 reads each activation about 30 clocks after it is written.
+- Without hardware multipliers an iCE40 needs 10,766 LUTs, over the 7,680 on an HX8K. An ECP5 maps the 42 lane multipliers onto DSP blocks and uses 3,125 LUTs. Both counts are from the committed `synth/*_stat.txt` (older Yosys, version not recorded). Yosys 0.69 gives 2,785 on the ECP5 with the same DSP, block RAM, carry and flip-flop counts ([`synth/reports/`](synth/reports/)).
 
 ## Verification
 
-For every image, the testbench checks three things against the golden model, bit for bit: all 32 hidden activations, all 10 layer-2 accumulators, and the predicted digit. It also tallies accuracy against the true labels.
+Per image, the testbench checks all 32 hidden activations, all 10 layer-2 accumulators and the predicted digit bit-exact against the golden model, and counts accuracy against the labels.
 
-To check that the testbench can fail, `make mutants` plants one bug at a time in a copy of `rtl/` (a `sed` script each, in [`mutants/`](mutants/)) and runs the unchanged testbench on the first 300 images. The figures below are from [`mutants/mutants.log`](mutants/mutants.log):
+`make mutants` plants one bug at a time in a copy of `rtl/` (one `sed` script each, in [`mutants/`](mutants/)) and runs the unchanged testbench on the first 300 images ([`mutants/mutants.log`](mutants/mutants.log)):
 
 | Planted bug (first 300 images) | Accuracy | Caught? |
 |---|---|---|
 | Accumulator base left unsigned (negative products zero-extended) | 11.3% | yes |
 | 16-bit accumulators instead of 24 | 81.0% | yes |
-| Rounding term missing from requantization | 98.3%, the same as the correct design | **yes**: internal values differ on 300 / 300 images, the predicted digit on only 1 / 300 |
+| Rounding term missing from requantization | 98.3%, the same as the correct design | yes: internal values differ on 300 / 300 images, the digit on only 1 / 300 |
 | Argmax keeps the last maximum on ties (`>=`) | 98.3% | no |
 
-The rounding bug is why the testbench compares internal values rather than just accuracy or the digit: the broken design scored exactly as well on these images, and its predicted digit differed from the golden model on only 1 of the 300. The tie-breaking bug isn't caught because no image in all 10,000 has two equal top scores (the closest gap is 1, from `mutants/data_stats.py`, in the same log), so the data can't exercise it. A directed test with forced ties would.
+The rounding bug keeps the correct accuracy and changes only 1 of 300 digits, which is why the testbench compares internal values, not just the digit. The tie bug is not caught: no image in all 10,000 has two equal top scores (smallest gap 1, from `mutants/data_stats.py`, same log). A directed test with forced ties would catch it.
 
-The data pipeline is checked too. [`model/prepare_mnist.py`](model/prepare_mnist.py) rebuilds the 14×14 dataset from the original MNIST files (checksums verified), and its first five images are byte-identical to the test images in the Arduino project.
+[`model/prepare_mnist.py`](model/prepare_mnist.py) rebuilds the 14×14 dataset from the original MNIST files (checksums verified); its first five images are byte-identical to the Arduino project's test images.
 
-## Run it
+## Usage
 
-Needs [Icarus Verilog](https://steveicarus.github.io/iverilog/) (`brew install icarus-verilog`) and Python 3 with NumPy (if NumPy is in a virtualenv, add `PYTHON=path/to/venv/bin/python` to the make command). Yosys and nextpnr (in the [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build)) are only for synthesis.
+Requires [Icarus Verilog](https://steveicarus.github.io/iverilog/) (`brew install icarus-verilog`) and Python 3 with NumPy (in a virtualenv, add `PYTHON=path/to/venv/bin/python` to the make command). Synthesis also needs Yosys and nextpnr ([OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build)).
 
 ```bash
 make test        # 1,000 images, about 15 s on an Apple M2; ends with ALL TESTS PASSED
@@ -116,7 +116,7 @@ Built with an AI pair programmer. Every result above can be reproduced with the 
 
 ```
 rtl/mac_lane.v            one int8 x uint7 multiply-accumulate lane
-rtl/tensor_core.v         lanes, ROMs, requantizer, argmax, control FSM
+rtl/tensor_core.v         lanes, ROMs, requantization, argmax, control FSM
 tb/tb_tensor_core.v       bit-exact checks on every image
 mutants/                  planted bugs (sed scripts), their runner and mutants.log
 model/golden.py           integer-only golden model, writes rom/ and sim/
@@ -132,10 +132,10 @@ MNIST is by Yann LeCun, Corinna Cortes and Christopher Burges.
 
 ## Series
 
-Each project computes the same neural-network operation, the weighted sum, one step closer to a GPU:
+Each project computes the weighted sum one step closer to a GPU:
 
 1. [analog-neuron](https://github.com/Jusman0/analog-neuron): with resistors
 2. [tinyml-mnist-uno](https://github.com/Jusman0/tinyml-mnist-uno): in int8 on an 8-bit CPU, one MAC at a time
 3. [dp4a-unit](https://github.com/Jusman0/dp4a-unit): as dedicated hardware, four MACs per clock
 4. **tiny-tensor-core**: the whole network in hardware, 32 MACs per clock
-5. next: on a real FPGA next to the Arduino, with the UNO as host CPU and this as its accelerator
+5. next: on a real FPGA next to the Arduino, with the UNO as host CPU and this core as its accelerator

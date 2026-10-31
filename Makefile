@@ -12,8 +12,7 @@ N ?= 1000
 
 .PHONY: test test-full golden mutants synth timing clean
 
-# sim/images.hex comes first so golden runs (and writes rom/params.vh) before
-# the testbench is compiled
+# sim/images.hex first: golden must write rom/params.vh before the testbench compiles
 test: sim/images.hex sim/tb_tensor_core
 	vvp -n sim/tb_tensor_core +n=$(N) | tee sim/tb.log
 	@grep -q '^PASS' sim/tb.log && echo "ALL TESTS PASSED"
@@ -21,19 +20,15 @@ test: sim/images.hex sim/tb_tensor_core
 test-full:
 	$(MAKE) test N=10000
 
-# golden.py writes rom/params.vh as well as the test vectors. Listing it here
-# tells make that the testbench, which includes params.vh, depends on golden.
+# golden.py also writes rom/params.vh, which the testbench includes
 golden rom/params.vh sim/images.hex: model/golden.py data/mnist_test_14x14.npz model/tinyml_weights_int8.npz | sim
 	$(PYTHON) model/golden.py
 
 sim/tb_tensor_core: tb/tb_tensor_core.v $(RTL) rom/params.vh | sim
 	$(IVERILOG) -o $@ $(RTL) tb/tb_tensor_core.v
 
-# Planted bugs (README, Verification). The report goes to sim/mutants.log and
-# is printed; the committed copy is mutants/mutants.log. status=$$? saves the
-# script's exit status (make turns $$ into $), so the cat can't hide it. 0
-# means the original design passed and every run finished, not that every bug
-# was caught: the argmax bug is expected to pass (see the README).
+# Report: sim/mutants.log (committed copy: mutants/mutants.log); status keeps the exit code past cat.
+# Exit 0 = original passed and every run finished, not every bug caught (argmax bug expected to pass).
 mutants: sim/images.hex rom/params.vh
 	PYTHON=$(PYTHON) bash mutants/run_mutants.sh > sim/mutants.log; \
 	status=$$?; cat sim/mutants.log; exit $$status

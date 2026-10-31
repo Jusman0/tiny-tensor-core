@@ -2,25 +2,21 @@
 Golden model for tiny-tensor-core: the TinyML MNIST network in integer-only
 arithmetic, exactly as the RTL computes it.
 
-  layer 1   acc1[j] = sum_i W1[j][i] * x[i]                      (int8 x int8)
-  requant   h[j]    = clamp((acc1[j] * M1 + B1q[j] + 2^(S-1)) >> S, 0, 127)
-  layer 2   acc2[k] = sum_j W2[k][j] * h[j]
-  argmax    digit   = argmax_k (acc2[k] + B2q[k])
+  layer 1         acc1[j] = sum_i W1[j][i] * x[i]                      (int8 x int8)
+  requantization  h[j]    = clamp((acc1[j] * M1 + B1q[j] + 2^(S-1)) >> S, 0, 127)
+  layer 2         acc2[k] = sum_j W2[k][j] * h[j]
+  argmax          digit   = argmax_k (acc2[k] + B2q[k])
 
-M1, B1q and B2q replace the float scales and biases the Arduino uses:
+M1, B1q and B2q replace the Arduino's float scales and biases:
   M1  = round(S1 / SH * 2^S)     one fixed-point multiplier for every neuron
   B1q = round(b1 / SH * 2^S)     layer-1 bias in the same fixed-point units
   B2q = round(b2 / S2)           layer-2 bias in accumulator units; scaling
                                  every logit by S2 > 0 can't change the argmax
 
-Writes:
-  rom/       weights, biases and params.vh for the RTL (committed)
-  sim/       test images and expected values for the testbench
-
-and prints how the integer-only network compares with the float version
-the Arduino runs, over all 10,000 MNIST test images. The float version is
-computed here in NumPy with the Arduino's arithmetic (the UNO itself only
-ran 5 test images).
+Writes rom/ (weights, biases and params.vh; committed) and sim/ (test images
+and expected values). Prints the integer path against the Arduino's float
+path, emulated in NumPy, over all 10,000 MNIST test images (the UNO itself
+ran only 5).
 
 Run from the repo root:  python3 model/golden.py
 """
@@ -64,8 +60,7 @@ def run_integer(x, w1, w2, m1, b1q, b2q):
 
 
 def run_float(x, q, w1, w2):
-    """The Arduino / stage A path, emulated in NumPy: float rescale and bias
-    between layers."""
+    """The Arduino's float path in NumPy: float rescale and bias between layers."""
     a1 = np.maximum((x @ w1.T) * np.float32(q["S1"]) + q["b1"], 0.0)
     h = np.round(a1 / np.float32(q["SH"])).clip(0, 127).astype(np.int64)
     logits = (h @ w2.T) * np.float32(q["S2"]) + q["b2"]
@@ -106,8 +101,7 @@ def main():
     h, acc2, pred = run_integer(x, w1, w2, m1, b1q, b2q)
     hf, pred_f = run_float(x, q, w1, w2)
 
-    # the accumulators must fit the RTL's 24-bit registers in the worst case,
-    # not just on this data: 196 * 127 * 128 for layer 1, 32 * 127 * 128 for 2
+    # worst case, not just this data, must fit 24 bits: 196*127*128 (layer 1), 32*127*128 (layer 2)
     assert 196 * 127 * 128 < 2 ** 23 and 32 * 127 * 128 < 2 ** 23
     assert 0 < m1 < 2 ** 16
 

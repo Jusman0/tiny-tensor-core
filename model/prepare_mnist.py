@@ -1,12 +1,10 @@
 """
 Rebuild data/mnist_test_14x14.npz from the original MNIST test set.
 
-Same preprocessing as tinyml-mnist-uno: pixels / 255, 2x2 average pool down
-to 14x14, then round(x * 127) clipped to 0..127. The first five images come
-out byte-identical to the test images baked into that project's weights.h.
-
-The committed .npz means you never need to run this. It's here so the data
-can be checked against the source.
+Same preprocessing as tinyml-mnist-uno: pixels / 255, 2x2 average pool to
+14x14, round(x * 127) clipped to 0..127. The first five images are
+byte-identical to the test images in that project's weights.h. The .npz is
+committed; this script checks it against the source.
 
 Run from the repo root:  python3 model/prepare_mnist.py
 """

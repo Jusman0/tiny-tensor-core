@@ -1,29 +1,12 @@
 #!/usr/bin/env bash
 # run_mutants.sh: planted-bug tests for the README's Verification table.
-#
-# A testbench that never fails proves nothing. So: plant one small bug in a
-# COPY of rtl/, run the unchanged testbench on it, and see whether it says
-# FAIL. Each bug is a sed script, mutants/NN_name.sed. Its first two lines
-# say which file it edits ("# file:") and what mistake it models
-# ("# models:").
-#
-# For the unmodified design ("00_original") and for each mutant:
-#   1. copy rtl/*.v to sim/mutants/<name>/ and apply the sed script there
-#   2. check that the file really changed (a pattern that no longer matches
-#      would leave the design unchanged, and it would PASS: that is a broken
-#      mutant, not a bug the testbench missed)
-#   3. compile the copy with tb/tb_tensor_core.v (unchanged) and run the
-#      first N images
-#   4. report the testbench's verdict, its three bit-exact checks and the
-#      accuracy against the true labels
-#
-# Usage, from anywhere (the Makefile's "make mutants" runs this):
-#   bash mutants/run_mutants.sh
-# Settings, from the environment:
-#   PYTHON=python3   a python with numpy (for mutants/data_stats.py)
-#   N=300            images per run
-# Needs sim/ from "make golden". The report goes to stdout. Exit status 0
-# means the original design passed and every run finished.
+# Each mutants/NN_name.sed plants one bug in a copy of rtl/ ("# file:" = target, "# models:" = bug).
+# For 00_original and each mutant: copy rtl/*.v to sim/mutants/<name>/, apply the sed, confirm the
+# file changed (a stale pattern would PASS unchanged), compile with the unchanged tb/tb_tensor_core.v,
+# run the first N images, report the verdict, the three bit-exact checks and accuracy.
+# Usage, from anywhere (make mutants runs this): bash mutants/run_mutants.sh
+# Env: PYTHON=python3 (needs numpy, for mutants/data_stats.py), N=300 images per run.
+# Needs sim/ from "make golden". Report on stdout; exit 0 = original passed and every run finished.
 
 set -u
 cd "$(dirname "$0")/.." || exit 1   # repo root: the testbench opens sim/*.hex from here
@@ -52,7 +35,7 @@ for name in $MUTANTS; do
     if [ "$name" != 00_original ]; then
         file=$(sed -n 's|^# file: rtl/||p' "mutants/$name.sed")
         sed -f "mutants/$name.sed" "rtl/$file" > "$dir/$file"
-        # diff exits with 1 when the files differ, which is what we want
+        # diff exits 1 when the files differ
         diff "rtl/$file" "$dir/$file" > "$dir/diff.txt"
         if [ $? -ne 1 ]; then echo "not applied" > "$dir/status"; continue; fi
     fi
@@ -64,8 +47,8 @@ for name in $MUTANTS; do
     vvp -n "$dir/tb" +n="$N" > "$dir/run.txt" 2>&1
 done
 
-# value NAME PREFIX: the "x/N" on the testbench line that starts with
-# PREFIX, e.g. "hidden activations    : 300/300 images bit-exact" -> 300/300
+# value NAME PREFIX: "x/N" from the testbench line starting with PREFIX, e.g.
+#   "hidden activations    : 300/300 images bit-exact" -> 300/300
 value() {
     sed -n "s|^$2 *: \([^ ]*\).*|\1|p" "$WORK/$1/run.txt"
 }

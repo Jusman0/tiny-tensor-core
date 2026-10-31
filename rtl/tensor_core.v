@@ -1,18 +1,10 @@
 `timescale 1ns/1ps
-// tensor_core: runs the whole TinyML MNIST network (196 -> 32 -> 10) in
-// integer-only hardware and outputs the predicted digit.
-//
-//   1. layer 1   32 MAC lanes, one per hidden neuron. Each clock one pixel
-//                is broadcast to all 32 lanes, each with its own weight.
-//                196 clocks for 6,272 MACs.
-//   2. requant   one fixed-point multiply + shift per neuron turns the int
-//                accumulator into an int8 activation (ReLU and clamp
-//                included). 32 clocks, through a 3-stage pipeline.
-//   3. layer 2   10 MAC lanes, one per digit, 32 clocks.
-//   4. argmax    adds the layer-2 bias and keeps the largest. 10 clocks.
-//
-// Load the 196 pixels through the img_* port, pulse start, wait for done.
-// See model/golden.py for where M1 and the ROM contents come from.
+// tensor_core: TinyML MNIST network (196 -> 32 -> 10), integer-only; outputs the digit.
+//   layer 1         32 lanes, one pixel broadcast per clock: 6,272 MACs in 196 clocks
+//   requantization  fixed-point multiply + shift to int8 (ReLU, clamp): 32 clocks, 3 stages
+//   layer 2         10 lanes, one per digit: 32 clocks
+//   argmax          add layer-2 bias, keep the largest: 10 clocks
+// Load 196 pixels via img_*, pulse start, wait for done. M1 and ROM contents: model/golden.py.
 
 module tensor_core #(
     parameter N_IN    = 196,
@@ -104,9 +96,7 @@ module tensor_core #(
     endgenerate
 
     // ---------------------------------------------------------- selectors
-    // Plain multiplexers indexed by idx. Writing these as acc1_all[24*idx +: 24]
-    // looks the same in simulation but synthesizes into wide barrel shifters,
-    // because 24 isn't a power of two.
+    // Explicit muxes: acc1_all[24*idx +: 24] becomes wide barrel shifters (24 is not a power of two).
     reg signed [ACC_W-1:0] acc1_sel, acc2_sel;
     integer k;
     always @* begin
@@ -122,17 +112,11 @@ module tensor_core #(
             if (idx[3:0] == k) acc2_sel = acc2_all[ACC_W*k +: ACC_W];
     end
 
-    // ---------------------------------------------------------- requantize
-    // h = clamp((acc1 * M1 + B1q + 2^(SHIFT-1)) >>> SHIFT, 0, 127)
-    // Negative results clamp to 0, which is the ReLU.
-    //
-    // Three pipeline stages: select, multiply, add/shift/clamp/write. In one
-    // clock this path limited the whole design to 33-37 MHz. The pipeline
-    // adds no clocks: layer 2 reads activation j about 30 clocks after
-    // it is written.
-    //
-    // Widths are sized to the math, not to 64 bits: a 64-bit expression
-    // here made synthesis build a 64x64 multiplier.
+    // ---------------------------------------------------------- requantization
+    // h = clamp((acc1 * M1 + B1q + 2^(SHIFT-1)) >>> SHIFT, 0, 127); the clamp at 0 is the ReLU.
+    // 3 stages: select, multiply, add/shift/clamp/write. In one clock this path capped fmax at 33-37 MHz.
+    // No added clocks: layer 2 reads activation j about 30 clocks after it is written.
+    // Widths sized to the math: a 64-bit expression here built a 64x64 multiplier.
     localparam [16:0]        M1_V  = M1;
     localparam signed [41:0] ROUND = 42'sd1 <<< (SHIFT - 1);
 

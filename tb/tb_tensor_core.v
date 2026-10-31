@@ -1,22 +1,13 @@
-// tb_tensor_core: pushes MNIST test images through tensor_core and checks,
-// for every image, that
-//   - all 32 hidden activations,
-//   - all 10 layer-2 accumulators, and
-//   - the predicted digit
-// match the Python golden model bit for bit. Also reports accuracy against
-// the true labels and the clocks per image. If an image never finishes (a
-// hung FSM), prints "FAIL: watchdog" and stops.
-//
-// Runs all 10,000 images by default; `vvp sim/tb_tensor_core +n=500` for fewer.
+// tb_tensor_core: per image, checks the 32 hidden activations, 10 layer-2 accumulators and digit
+// bit-exact against the golden model; reports accuracy and clocks per image.
+// All 10,000 images by default; `vvp sim/tb_tensor_core +n=500` for fewer.
 `timescale 1ns/1ps
 
 module tb_tensor_core;
     `include "rom/params.vh"
 
     localparam N_MAX = 10000, N_IN = 196, N_HID = 32, N_OUT = 10, ACC_W = 24;
-    // A correct design finishes an image in 273 clocks. If done never comes
-    // (a hung FSM), stop after this many and print FAIL instead of waiting
-    // forever, which would also hang CI.
+    // 273 clocks per image when correct; a hung FSM prints "FAIL: watchdog" instead of hanging CI
     localparam WATCHDOG = 10000;
 
     reg [7:0]             images   [0:N_MAX*N_IN-1];

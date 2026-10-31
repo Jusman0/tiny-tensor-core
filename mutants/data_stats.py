@@ -1,14 +1,11 @@
 """
-Two facts about the test images that explain the planted-bug results
-(mutants/run_mutants.sh prints this into its report):
+Data facts behind the planted-bug results (printed in mutants/run_mutants.sh's report):
 
-  - the largest |acc1|, the layer-1 accumulator: planted bug 02 (16-bit
-    accumulators) breaks only if it goes past what 16 bits can hold
-  - how close the top two logits come: planted bug 04 (argmax keeps the
-    LAST maximum) only changes the digit when two logits tie for the top
+  - largest |acc1|: bug 02 (16-bit accumulators) breaks only if it exceeds 16 bits
+  - top-two logit gap: bug 04 (argmax keeps the LAST maximum) changes the digit only on a tie
 
-Both are computed with the golden model's own integer arithmetic
-(model/golden.py), over the first N images and over all 10,000.
+Uses the golden model's integer arithmetic (model/golden.py), over the first
+N images and all 10,000.
 
 Run from the repo root:  python3 mutants/data_stats.py 300
 """
